@@ -40,33 +40,52 @@ class User(AbstractUser):
                 regex=r'^\d{10}$',  # Regex to ensure only digits are allowed
                 message="Phone number must be exactly 10 digits"
             )
-        ]
+        ],blank=True
     )
-    address = models.TextField()
+    address = models.TextField(default='')
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['phone_number', 'address']
     objects=CustomUserManager()
 
 
+class Brand(models.Model):
+    name=models.CharField(max_length=100)
+    def __str__(self) -> str:
+        return 'Brand' + self.name
+    
+
+class Tag(models.Model):
+    name=models.CharField(max_length=200)
+    def __str__(self) -> str:
+        return self.name
+
 
 class Category(models.Model):
     # db_index field 
-    title   = models.CharField(max_length=255)
+    name    = models.CharField(max_length=255)
     slug    = models.SlugField(unique=True)
 
     def __str__(self) -> str:
-        return self.title
+        return self.name
     
 
+# do it later about currency of price
 class Product(models.Model):
-    created_by  = models.ForeignKey(User)
-    title       = models.CharField( max_length=255)
-    category    = models.ForeignKey(Category,related_name='product',on_delete=models.CASCADE)
-    slug        = models.SlugField()
-    desc        = models.TextField(help_text='Product description')
-    price       = models.PositiveIntegerField()
-    in_stock    = models.BooleanField(default=True)
-    stock       = models.PositiveIntegerField()
-    created_at  = models.DateTimeField( auto_now_add=True)
-    updated_at  = models.DateTimeField( auto_now=True)
+    name            = models.CharField( max_length=255)
+    brand           = models.ForeignKey(Brand,on_delete=models.CASCADE,related_name='products')
+    created_by      = models.ForeignKey(User,on_delete=models.CASCADE)
+    category        = models.ForeignKey(Category,related_name='products',on_delete=models.CASCADE)
+    slug            = models.SlugField()
+    description     = models.TextField(help_text='Product description')
+    author          = models.CharField(help_text='Name of author of book',null=True ,blank=True)  # when cateogory is book 
+    specification   = models.JSONField(blank=True,null=True)
+    price           = models.DecimalField(max_digits=6)  # here price unit is  Rs
+    in_stock        = models.BooleanField(default=True)
+    stock           = models.PositiveIntegerField()
+    tag             = models.ManyToManyField(Tag,related_name='products')
+    created_at      = models.DateTimeField( auto_now_add=True)
+    updated_at      = models.DateTimeField( auto_now=True)
+
+    def __str__(self):
+        return self.name
