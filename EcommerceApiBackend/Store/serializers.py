@@ -1,5 +1,5 @@
-from rest_framework import serializers
 from .models import Category , Product, Brand ,User
+from rest_framework import serializers
 from django.core.validators import MinLengthValidator,MaxLengthValidator, RegexValidator
 from .models import User
 class UserSerializer(serializers.ModelSerializer):
@@ -42,7 +42,6 @@ class BrandSerializer(serializers.ModelSerializer):
     class Meta:
         model=Brand
         fields='__all__'
-
 
 
 class CategorySeriazlizer(serializers.ModelSerializer):

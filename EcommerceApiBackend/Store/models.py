@@ -62,3 +62,29 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
+    
+
+class Cart(models.Model):
+    user=models.ForeignKey(User,on_delete=models.CASCADE)
+    created_at=models.DateTimeField(auto_now_add=True)
+    updated_at=models.DateTimeField(auto_now=True)
+    status = models.CharField(
+        max_length=20,
+        choices=[('active', 'Active'), ('abandoned', 'Abandoned'), ('ordered', 'Ordered')],
+        default='active'
+    )
+
+    def total_price(self):
+        return sum(item.total_price for item in self.cartitem_set.all())
+    
+
+class CartItem(models.Model):
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+    price_at_time = models.DecimalField(max_digits=10, decimal_places=2)  # Snapshot of the price
+    discount = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+
+    @property
+    def total_price(self):
+        return (self.price_at_time - (self.discount or 0)) * self.quantity
