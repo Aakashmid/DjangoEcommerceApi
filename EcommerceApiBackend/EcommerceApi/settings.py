@@ -1,7 +1,7 @@
 
 from pathlib import Path
 from datetime import timedelta
-
+from decouple import config
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -67,11 +67,14 @@ WSGI_APPLICATION = 'EcommerceApi.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': config("DB_NAME"),             # Database name
+        'USER': config("DB_USERNAME"),             # Database user
+        'PASSWORD': config("DB_PASSWORD"),     # User's password
+        'HOST': config('HOST_NAME'),                        # Host (e.g., 'localhost' or an IP address)
+        'PORT': '5432',                     # Default PostgreSQL port is '5432'
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -131,7 +134,7 @@ REST_FRAMEWORK={
 # JWT configuration
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=59),
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=5),
     'ALGORITHM': 'HS256',
 }

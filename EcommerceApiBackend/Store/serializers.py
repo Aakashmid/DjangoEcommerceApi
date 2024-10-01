@@ -4,21 +4,9 @@ from django.core.validators import MinLengthValidator,MaxLengthValidator, RegexV
 from .models import User
 class UserSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(write_only=True, required=True)
-    phone_number = serializers.CharField(
-        max_length=10,
-        validators=[
-            MinLengthValidator(10),
-            MaxLengthValidator(10),
-            RegexValidator(
-                regex=r'^\d{10}$',
-                message="Phone number must be exactly 10 digits"
-            )
-        ]
-    )
-
     class Meta:
         model=User
-        fields=['id','username','password','password2','first_name','last_name','email','phone_number','address']
+        fields=['id','username','password','password2']
         extra_kwargs={'password':{'write_only':True}}
     
     def validate(self, attrs):
@@ -38,6 +26,19 @@ class UserSerializer(serializers.ModelSerializer):
         user.save()
         return user
 
+class ProfileSerializer(serializers.ModelSerializer):
+    name=serializers.SerializerMethodField()
+    class Meta:
+        model=User
+        fields=['id','username','email','profile_img','name','phone_number','address']
+
+    # def perform create 
+
+    def get_name(self,obj):
+        firstname=obj.first_name or ''
+        lastname=obj.last_name or ''
+        return f'{firstname} {lastname}'
+    
 class BrandSerializer(serializers.ModelSerializer):
     class Meta:
         model=Brand
@@ -53,4 +54,8 @@ class CategorySeriazlizer(serializers.ModelSerializer):
 class ProductSeializer(serializers.ModelSerializer):
     class Meta:
         model=Product
-        exclude=['created_by',]
+        exclude=['created_by']
+
+
+class CartItemSerializer(serializers.ModelSerializer):
+    pass
