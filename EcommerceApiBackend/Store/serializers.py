@@ -39,6 +39,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         lastname=obj.last_name or ''
         return f'{firstname} {lastname}'
     
+    
 class BrandSerializer(serializers.ModelSerializer):
     class Meta:
         model=Brand
@@ -46,16 +47,24 @@ class BrandSerializer(serializers.ModelSerializer):
 
 
 class CategorySeriazlizer(serializers.ModelSerializer):
+    parent=serializers.StringRelatedField()  # will include parent category name 
     class Meta:
         model=Category
-        fields=['id','name','slug']
+        fields=['id','name','slug','name','description']
 
 
 class ProductSeializer(serializers.ModelSerializer):
+    category=serializers.StringRelatedField()
     class Meta:
         model=Product
-        exclude=['created_by']
+        fields= ['id', 'name', 'description', 'price', 'category', 'author','tag','brand','specification','in_stock','stock']
 
+    def validate(self,data):
+        category=data.get('category').lower()
+        if (category == "books" or category == 'book' ) and not  data.get('author'):
+            raise serializers.ValidationError({"author":"This field is required"})
+            
+        return data
 
 class CartItemSerializer(serializers.ModelSerializer):
     pass

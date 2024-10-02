@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinLengthValidator,MaxLengthValidator, RegexValidator
+from django.utils.text import slugify
 # Create your models here.
 
 
@@ -22,7 +23,7 @@ class User(AbstractUser):
 class Brand(models.Model):
     name=models.CharField(max_length=100)
     def __str__(self) -> str:
-        return 'Brand' + self.name
+        return 'Brand - ' + self.name
     
 
 class Tag(models.Model):
@@ -32,10 +33,42 @@ class Tag(models.Model):
 
 
 class Category(models.Model):
-    # db_index field 
-    name    = models.CharField(max_length=255)
-    def __str__(self) -> str:
+    name = models.CharField(max_length=255, unique=True)
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
+    parent = models.ForeignKey(
+        'self', on_delete=models.CASCADE, null=True, blank=True, related_name='subcategories'
+    )
+    description = models.TextField(blank=True, null=True)
+
+    class Meta:
+        verbose_name_plural = 'categories'
+
+    def save(self, *args, **kwargs):
+        # Automatically generate slug from name if not provided
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
         return self.name
+
+    @property
+    def get_products(self):
+        """Return all products associated with this category and its subcategories."""
+        return Product.objects.filter(category=self)
+
+    @property
+    def get_all_products(self):
+        """Return products from this category and all of its subcategories."""
+        subcategory_ids = self.get_descendants()
+        return Product.objects.filter(category__in=subcategory_ids)
+
+    def get_descendants(self):
+        """Get all subcategories including self."""
+        subcategories = [self.id]
+        for subcategory in self.subcategories.all():
+            subcategories.extend(subcategory.get_descendants())
+        return subcategories
     
 
 # do it later about currency of price
@@ -50,7 +83,7 @@ class Product(models.Model):
     price           = models.DecimalField(max_digits=6,decimal_places=2)  # here price unit is  Rs
     in_stock        = models.BooleanField(default=True)
     stock           = models.PositiveIntegerField()
-    tag             = models.ManyToManyField(Tag,related_name='products')
+    tag             = models.ManyToManyField(Tag,related_name='products',blank=True)
     created_at      = models.DateTimeField( auto_now_add=True)
     updated_at      = models.DateTimeField( auto_now=True)
 
