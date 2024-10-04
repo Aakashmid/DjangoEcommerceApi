@@ -80,7 +80,7 @@ class Product(models.Model):
     description     = models.TextField(help_text='Product description')
     author          = models.CharField(help_text='Name of author of book',null=True ,blank=True,max_length=100)  # when cateogory is book 
     specification   = models.JSONField(blank=True,null=True)
-    price           = models.DecimalField(max_digits=6,decimal_places=2)  # here price unit is  Rs
+    price           = models.DecimalField(max_digits=7,decimal_places=2)  # here price unit is  Rs
     in_stock        = models.BooleanField(default=True)
     stock           = models.PositiveIntegerField()
     tag             = models.ManyToManyField(Tag,related_name='products',blank=True)

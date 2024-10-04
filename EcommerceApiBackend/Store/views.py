@@ -3,8 +3,10 @@ from rest_framework.decorators import api_view,permission_classes
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny,IsAuthenticated,IsAdminUser
-from rest_framework.generics import RetrieveUpdateAPIView
+from rest_framework.generics import RetrieveUpdateAPIView,RetrieveAPIView
 from rest_framework.views import APIView 
+from rest_framework.filters import SearchFilter
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status,viewsets
 from .models import User, Product
 from .serializers import UserSerializer,ProfileSerializer,ProductSeializer
@@ -65,10 +67,14 @@ class ProfileView(RetrieveUpdateAPIView):
 class ProductViewset(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSeializer
+    filter_backends=[DjangoFilterBackend,SearchFilter]  # use search filter for searching , and DjangoFilterBackend for filtering products on basis of fields 
+    search_fields=['name','category__name']
+    filterset_fields = ['category', 'brand', 'price']
     def get_permissions(self):
         # Define different permissions for different actions
         if self.action == 'list' or self.action == 'retrieve':
-            permission_classes = [IsAuthenticated]  # Only authenticated users can get data
+            # permission_classes = [IsAuthenticated]  # Only authenticated users can get data
+            permission_classes = [AllowAny]  # Only authenticated users can get data
 
         elif self.action in ['create', 'update', 'partial_update', 'destroy']:
             # Only admins can create, update or delete
@@ -77,3 +83,19 @@ class ProductViewset(viewsets.ModelViewSet):
             permission_classes = []  # No permissions by default
 
         return [permission() for permission in permission_classes]
+    
+    def perform_create(self,serializer):
+        serializer.save(created_by=self.request.user)
+
+     # Override the update method to handle partial updates with PUT
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)  # Set partial=True for PUT requests
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+class CardDetailView(RetrieveAPIView):
+    pass

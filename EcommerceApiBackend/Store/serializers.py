@@ -1,7 +1,8 @@
-from .models import Category , Product, Brand ,User
+from .models import Category , Product, Brand ,User, Cart , CartItem
 from rest_framework import serializers
 from django.core.validators import MinLengthValidator,MaxLengthValidator, RegexValidator
-from .models import User
+
+
 class UserSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(write_only=True, required=True)
     class Meta:
@@ -25,6 +26,7 @@ class UserSerializer(serializers.ModelSerializer):
         user.set_password(validated_data['password'])
         user.save()
         return user
+
 
 class ProfileSerializer(serializers.ModelSerializer):
     name=serializers.SerializerMethodField()
@@ -50,21 +52,23 @@ class CategorySeriazlizer(serializers.ModelSerializer):
     parent=serializers.StringRelatedField()  # will include parent category name 
     class Meta:
         model=Category
-        fields=['id','name','slug','name','description']
+        fields=['id','name','slug','description']
 
 
 class ProductSeializer(serializers.ModelSerializer):
-    category=serializers.StringRelatedField()
     class Meta:
         model=Product
         fields= ['id', 'name', 'description', 'price', 'category', 'author','tag','brand','specification','in_stock','stock']
 
     def validate(self,data):
-        category=data.get('category').lower()
+        category=data.get('category').name.lower() if data.get('category',None) is not None else ""
         if (category == "books" or category == 'book' ) and not  data.get('author'):
             raise serializers.ValidationError({"author":"This field is required"})
             
         return data
 
+
 class CartItemSerializer(serializers.ModelSerializer):
-    pass
+    class Meta:
+        model = CartItem
+        fields='__all__'
