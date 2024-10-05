@@ -7,7 +7,9 @@ from rest_framework_simplejwt.views import (
 )
 
 router = DefaultRouter()
-router.register('products',views.ProductViewset,basename='Post') #### products related endpoints
+router.register('products',views.ProductViewset,basename='product') #### product's  endpoints
+router.register('categories',views.CategoryViewset,basename='category') #### category's  endpoints
+router.register('cart',views.CartViewSet,basename='cart') #### cart's  endpoints
 
 urlpatterns = [
     path('',include(router.urls)),
@@ -18,5 +20,4 @@ urlpatterns = [
 
     ####  profile endpoint
     path('users/profile/',views.ProfileView.as_view(),name='profile-detail'),
-    # path('products/<int:id>', ),
 ]

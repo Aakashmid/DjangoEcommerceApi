@@ -49,16 +49,15 @@ class BrandSerializer(serializers.ModelSerializer):
 
 
 class CategorySeriazlizer(serializers.ModelSerializer):
-    parent=serializers.StringRelatedField()  # will include parent category name 
     class Meta:
         model=Category
-        fields=['id','name','slug','description']
+        fields=['id','name','slug','description','parent']
 
 
 class ProductSeializer(serializers.ModelSerializer):
     class Meta:
         model=Product
-        fields= ['id', 'name', 'description', 'price', 'category', 'author','tag','brand','specification','in_stock','stock']
+        fields= ['id', 'name','img', 'description', 'price', 'category', 'author','tag','brand','specification','in_stock','stock']
 
     def validate(self,data):
         category=data.get('category').name.lower() if data.get('category',None) is not None else ""
@@ -71,4 +70,4 @@ class ProductSeializer(serializers.ModelSerializer):
 class CartItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = CartItem
-        fields='__all__'
+        fields=['product','quantitiy','price_at_time','discount']

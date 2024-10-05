@@ -74,6 +74,7 @@ class Category(models.Model):
 # do it later about currency of price
 class Product(models.Model):
     name            = models.CharField( max_length=255)
+    img             = models.ImageField(upload_to='product_images/', default='defaultProduct.png')
     brand           = models.ForeignKey(Brand,on_delete=models.CASCADE,related_name='products')
     created_by      = models.ForeignKey(User,on_delete=models.CASCADE)
     category        = models.ForeignKey(Category,related_name='products',on_delete=models.CASCADE)
@@ -104,6 +105,7 @@ class Cart(models.Model):
     def total_price(self):
         return sum(item.total_price for item in self.cartitem_set.all())
     
+
 
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
