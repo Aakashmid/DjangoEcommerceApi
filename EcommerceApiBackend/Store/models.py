@@ -106,7 +106,6 @@ class Cart(models.Model):
         return sum(item.total_price for item in self.cartitem_set.all())
     
 
-
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -117,3 +116,44 @@ class CartItem(models.Model):
     @property
     def total_price(self):
         return (self.price_at_time - (self.discount or 0)) * self.quantity
+    
+class Address(models.Model):
+    user        = models.ForeignKey(User, on_delete=models.CASCADE, related_name='addresses')
+    address     = models.CharField(max_length=334)
+    state       = models.CharField(max_length=53)
+    city        = models.CharField(max_length=34)
+    zip_code    = models.CharField(max_length=12)
+    is_default  = models.BooleanField(default=False)  # Mark a default address
+
+    def __str__(self):
+        return f"{self.address}, {self.city}, {self.state}, {self.zip_code}"
+
+
+class Order(models.Model):
+    user        = models.ForeignKey(User, on_delete=models.CASCADE)
+    address     = models.ForeignKey(Address, on_delete=models.SET_NULL, null=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
+    updated_at  = models.DateTimeField(auto_now=True)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(
+        max_length=20, 
+        choices=[('pending', 'Pending'), ('shipped', 'Shipped'), ('delivered', 'Delivered')],
+        default='pending'
+    )
+
+    def __str__(self) -> str:
+        return f"Order {self.id} - {self.user.username}"
+
+    
+class OrderItem(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField()
+    price_at_time = models.DecimalField(max_digits=10, decimal_places=2)
+
+    @property
+    def total_price(self):
+        return self.quantity * self.price_at_time
+
+    def __str__(self):
+        return f"{self.quantity} of {self.product.name}"

@@ -1,7 +1,6 @@
-from .models import Category , Product, Brand ,User, Cart , CartItem
+from .models import Category , Product, Brand ,User, Cart , CartItem , Address
 from rest_framework import serializers
 from django.core.validators import MinLengthValidator,MaxLengthValidator, RegexValidator
-
 
 class UserSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(write_only=True, required=True)
@@ -71,3 +70,9 @@ class CartItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = CartItem
         fields=['product','quantitiy','price_at_time','discount']
+
+
+class AddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = ['id', 'address', 'state', 'city', 'zip_code', 'phone', 'is_default']
