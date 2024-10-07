@@ -1,3 +1,4 @@
+from typing import Iterable
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinLengthValidator,MaxLengthValidator, RegexValidator
@@ -17,7 +18,6 @@ class User(AbstractUser):
         ]
     )
     profile_img=models.ImageField(upload_to='UserProfileImages/',default='defaultProfileimg.png')
-    address = models.TextField(default='')
 
 
 class Brand(models.Model):
@@ -107,7 +107,7 @@ class Cart(models.Model):
     
 
 class CartItem(models.Model):
-    cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE,related_name='cart_items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
     price_at_time = models.DecimalField(max_digits=10, decimal_places=2)  # Snapshot of the price
@@ -127,6 +127,12 @@ class Address(models.Model):
 
     def __str__(self):
         return f"{self.address}, {self.city}, {self.state}, {self.zip_code}"
+    
+    def save(self, force_insert: bool = ..., force_update: bool = ..., using: str | None = ..., update_fields: Iterable[str] | None = ...) -> None:
+        """ unset default flat for other addresses of a user if current address hase is_default True """
+        if self.is_default:
+            Address.objects.filter(user=self.user,is_default=True).update(is_default=False)
+        return super().save(force_insert, force_update, using, update_fields)
 
 
 class Order(models.Model):

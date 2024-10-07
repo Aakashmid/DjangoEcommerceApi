@@ -1,6 +1,10 @@
-from .models import Category , Product, Brand ,User, Cart , CartItem , Address
+from .models import Category , Product, Brand ,User, Cart , CartItem , Address, Order, OrderItem
 from rest_framework import serializers
-from django.core.validators import MinLengthValidator,MaxLengthValidator, RegexValidator
+
+class AddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = ['id', 'address', 'state', 'city', 'zip_code', 'phone', 'is_default']
 
 class UserSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(write_only=True, required=True)
@@ -29,6 +33,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class ProfileSerializer(serializers.ModelSerializer):
     name=serializers.SerializerMethodField()
+    address=serializers.SerializerMethodField()
     class Meta:
         model=User
         fields=['id','username','email','profile_img','name','phone_number','address']
@@ -39,6 +44,12 @@ class ProfileSerializer(serializers.ModelSerializer):
         firstname=obj.first_name or ''
         lastname=obj.last_name or ''
         return f'{firstname} {lastname}'
+    
+    def get_address(self,obj):
+        default_address=Address.objects.filter(is_default=True).first()
+        if not default_address:
+            return None
+        return AddressSerializer(default_address).data
     
     
 class BrandSerializer(serializers.ModelSerializer):
@@ -67,12 +78,32 @@ class ProductSeializer(serializers.ModelSerializer):
 
 
 class CartItemSerializer(serializers.ModelSerializer):
+    total_price = serializers.SerializerMethodField()
     class Meta:
         model = CartItem
-        fields=['product','quantitiy','price_at_time','discount']
+        fields=['id','product','quantitiy','price_at_time','discount','total_price']
+
+    def get_total_price(self,obj):
+        return obj.total_price
 
 
-class AddressSerializer(serializers.ModelSerializer):
+class OrderItemSerializer(serializers.ModelSerializer):
+    total_price = serializers.SerializerMethodField()
     class Meta:
-        model = Address
-        fields = ['id', 'address', 'state', 'city', 'zip_code', 'phone', 'is_default']
+        model=OrderItem
+        fields=['id',"product",'quantity','total_price']  # total price is read_only
+    
+    def create(self, validated_data):
+        product = validated_data['product']
+        validated_data['price_at_time'] = product.price 
+        return super().create(validated_data)
+    
+    def get_total_price(self,obj):
+        return obj.total_price
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    order_items = OrderItemSerializer(many=True, required=False)  # Optional for cart orders
+    class Meta:
+        model=Order
+        fields = ['id', 'user', 'address', 'total_price', 'status', 'order_items']
