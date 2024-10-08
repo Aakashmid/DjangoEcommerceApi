@@ -3,13 +3,12 @@ from rest_framework.decorators import api_view,permission_classes
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny,IsAuthenticated,IsAdminUser
-from rest_framework.generics import RetrieveUpdateAPIView,RetrieveAPIView
 from rest_framework.views import APIView 
 from rest_framework.filters import SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status,viewsets
-from .models import User, Product , Category , Cart , CartItem
-from .serializers import UserSerializer,ProfileSerializer,ProductSeializer, CategorySeriazlizer , CartItemSerializer
+from rest_framework import status,viewsets , generics
+from .models import User, Product , Category , Cart , CartItem , Order, OrderItem
+from .serializers import UserSerializer,ProfileSerializer,ProductSeializer, CategorySeriazlizer , CartItemSerializer,OrderSerializer
 # Create your views here.
 
 
@@ -42,7 +41,7 @@ class LogoutView(APIView):
         
 
 # profile view for getting and updating profile data
-class ProfileView(RetrieveUpdateAPIView):
+class ProfileView(generics.RetrieveUpdateAPIView):
     serializer_class=ProfileSerializer
     def get_object(self):
         return self.request.user
@@ -115,7 +114,7 @@ class CategoryViewset(viewsets.ModelViewSet):
         return [permission() for permission in permission_classes]
     
 
-class CartViewSet(viewsets.ModelViewSet):
+class CartViewSet(viewsets.ModelViewSet): 
     queryset = CartItem.objects.all()
     serializer_class = CartItemSerializer
 
@@ -126,3 +125,69 @@ class CartViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         cart=get_object_or_404(Cart,user=self.request.user)
         serializer.save(cart=cart)
+
+
+class OrderView(APIView):
+    '''handling two order case , through cart or without cart '''
+    def post(self,request,*args, **kwargs):
+        user=request.user
+        if 'product_id' in request.data:            
+            product_id = request.data['product_id']
+            quantity = request.data.get('quantity', 1)
+            
+            # Prepare data for a single product order
+            order_data = {
+                'user': user.id,
+                'address': request.data.get('address'),
+                'order_items': [
+                    {
+                        'product': product_id,
+                        'quantity': quantity,
+                    }
+                ]
+            }
+            serializer = OrderSerializer(data=order_data)
+        
+        elif 'cart_items' in request.data:
+            cart_items = request.data['cart_items']
+            order_items_data = []
+
+            # Prepare data for multiple cart items
+            for item in cart_items:
+                order_items_data.append({
+                    'product': item['product_id'],  # Assuming cart item has product_id
+                    'quantity': item.get('quantity', 1),
+                })
+
+            order_data = {
+                'user': user.id,
+                'address': request.data.get('address'),
+                'order_items': order_items_data,
+            }
+            serializer = OrderSerializer(data=order_data)
+
+        else:
+            return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CancelOrder(APIView):
+    def patch(self,request,*args, **kwargs):
+        '''handle cancel order action , will change status of order '''
+        pass
+        
+
+class OrderListView(generics.ListAPIView):
+    serializer_class=OrderSerializer
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user)
+    
+
+class OrderDetailView(generics.RetrieveAPIView):
+    serializer_class=OrderSerializer
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user)
