@@ -6,9 +6,10 @@ from rest_framework.permissions import AllowAny,IsAuthenticated,IsAdminUser
 from rest_framework.views import APIView 
 from rest_framework.filters import SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status,viewsets , generics
-from .models import User, Product , Category , Cart , CartItem , Order, OrderItem
-from .serializers import UserSerializer,ProfileSerializer,ProductSeializer, CategorySeriazlizer , CartItemSerializer,OrderSerializer
+from rest_framework.exceptions import ValidationError
+from rest_framework import status,viewsets , generics 
+from .models import User, Product , Category , Cart , CartItem , Order, OrderItem , Review
+from .serializers import UserSerializer,ProfileSerializer,ProductSeializer, CategorySeriazlizer , CartItemSerializer,OrderSerializer, ReviewSerializer
 # Create your views here.
 
 
@@ -191,3 +192,16 @@ class OrderDetailView(generics.RetrieveAPIView):
     serializer_class=OrderSerializer
     def get_queryset(self):
         return Order.objects.filter(user=self.request.user)
+
+
+class ReviewViewSet(viewsets.ModelViewSet):
+    serializer_class = ReviewSerializer
+
+    def get_queryset(self):
+        product_id = self.kwargs.get('product_id',None)
+        if product_id is not None:
+            return Review.objects.filter(user=self.request.user, product__id=product_id)
+        raise ValidationError("Product id not specified !!")
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)

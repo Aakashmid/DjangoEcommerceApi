@@ -1,4 +1,4 @@
-from .models import Category , Product, Brand ,User, Cart , CartItem , Address, Order, OrderItem
+from .models import Category , Product, Brand ,User, Cart , CartItem , Address, Order, OrderItem,Review
 from rest_framework import serializers
 
 class AddressSerializer(serializers.ModelSerializer):
@@ -107,3 +107,19 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model=Order
         fields = ['id', 'user', 'address', 'total_price', 'status', 'order_items']
+
+
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField(read_only=True)  # Show the username as a string
+    class Meta:
+        model = Review
+        fields = ['id', 'product', 'user', 'rating', 'review_text', 'created_at']
+        read_only_fields = ['created_at']
+
+
+# payment handlers serializer class
+# class PayementSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         pass

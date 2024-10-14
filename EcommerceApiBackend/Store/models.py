@@ -1,7 +1,7 @@
 from typing import Iterable
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from django.core.validators import MinLengthValidator,MaxLengthValidator, RegexValidator
+from django.core.validators import RegexValidator,MinValueValidator,MaxValueValidator
 from django.utils.text import slugify
 # Create your models here.
 
@@ -163,3 +163,9 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity} of {self.product.name}"
+
+
+class Review(models.Model):
+    user        = models.ForeignKey(User, on_delete=models.CASCADE)
+    product     = models.ForeignKey(Product, on_delete=models.CASCADE)
+    rating      = models.PositiveIntegerField(choices=[(i,str(i)) for i in range(1,6)] ,validators=[MinValueValidator(1), MaxValueValidator(5)])
