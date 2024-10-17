@@ -165,7 +165,39 @@ class OrderItem(models.Model):
         return f"{self.quantity} of {self.product.name}"
 
 
+class Payment(models.Model):
+    PAYMENT_METHOD_CHOICES = [
+        ('credit_card', 'Credit Card'),
+        ('debit_card', 'Debit Card'),
+        ('upi', 'UPI Transaction'),
+        ('bank_transfer', 'Bank Transfer'),
+        ('cash_on_delivery', 'Cash on Delivery'),
+    ]
+
+    id = models.AutoField(primary_key=True)
+    method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    paid = models.BooleanField()
+    reference_num = models.CharField(max_length=50)
+    order = models.ForeignKey(
+        Order, on_delete=models.DO_NOTHING, related_name="payment"
+    )
+    payement_date = models.DateTimeField(auto_now_add=True)
+
+
+    def __str__(self):
+        return f"Payment {self.id} for Order {self.order.id} - {self.method}"
+
+
 class Review(models.Model):
     user        = models.ForeignKey(User, on_delete=models.CASCADE)
     product     = models.ForeignKey(Product, on_delete=models.CASCADE)
     rating      = models.PositiveIntegerField(choices=[(i,str(i)) for i in range(1,6)] ,validators=[MinValueValidator(1), MaxValueValidator(5)])
+    review_text = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('product', 'user')  # Ensure one review per user per product
+
+    def __str__(self):
+        return f"{self.product.name} - {self.user.username} ({self.rating} stars)"

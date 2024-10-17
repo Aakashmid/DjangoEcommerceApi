@@ -1,4 +1,4 @@
-from .models import Category , Product, Brand ,User, Cart , CartItem , Address, Order, OrderItem,Review
+from .models import Category , Product, Brand ,User, Cart , CartItem , Address, Order, OrderItem,Review , Payment
 from rest_framework import serializers
 
 class AddressSerializer(serializers.ModelSerializer):
@@ -109,6 +109,10 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'address', 'total_price', 'status', 'order_items']
 
 
+class PaymentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Payment
+        fields = ['id', 'order', 'method', 'paid','reference_number']
 
 
 class ReviewSerializer(serializers.ModelSerializer):
