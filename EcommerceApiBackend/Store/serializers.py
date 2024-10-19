@@ -1,4 +1,4 @@
-from .models import Category , Product, Brand ,User, Cart , CartItem , Address, Order, OrderItem,Review , Payment
+from .models import Category , Product,User, Cart , CartItem , Address, Order, OrderItem,Review , Payment
 from rest_framework import serializers
 
 class AddressSerializer(serializers.ModelSerializer):
@@ -51,13 +51,6 @@ class ProfileSerializer(serializers.ModelSerializer):
             return None
         return AddressSerializer(default_address).data
     
-    
-class BrandSerializer(serializers.ModelSerializer):
-    class Meta:
-        model=Brand
-        fields='__all__'
-
-
 class CategorySeriazlizer(serializers.ModelSerializer):
     class Meta:
         model=Category
@@ -67,7 +60,7 @@ class CategorySeriazlizer(serializers.ModelSerializer):
 class ProductSeializer(serializers.ModelSerializer):
     class Meta:
         model=Product
-        fields= ['id', 'name','img', 'description', 'price', 'category', 'author','tag','brand','specification','in_stock','stock']
+        fields= ['id', 'name','img', 'description', 'price', 'category', 'author','specification','in_stock','stock','views']
 
     def validate(self,data):
         category=data.get('category').name.lower() if data.get('category',None) is not None else ""

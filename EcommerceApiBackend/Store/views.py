@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from django.http import JsonResponse
 from rest_framework.decorators import api_view,permission_classes 
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
@@ -8,9 +9,20 @@ from rest_framework.filters import SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.exceptions import ValidationError
 from rest_framework import status,viewsets , generics 
+from .filters import ProductFilter
 from .models import User, Product , Category , Cart , CartItem , Order, OrderItem , Review
 from .serializers import UserSerializer,ProfileSerializer,ProductSeializer, CategorySeriazlizer , CartItemSerializer,OrderSerializer, ReviewSerializer
 # Create your views here.
+
+
+@api_view(['GET', 'POST','PUT', 'DELETE', 'PATCH'])
+def custom_404_handler(request, exception=None):
+    response_data = {
+        "error": "Endpoint not found",
+        "status_code": status.HTTP_404_NOT_FOUND,
+        "message": "The endpoint you requested does not exist. Please check the URL."
+    }
+    return Response(response_data, status=status.HTTP_404_NOT_FOUND)
 
 
 @api_view(['POST'])
@@ -35,9 +47,10 @@ class LogoutView(APIView):
         try:
             refresh_token = request.data["refresh"]
             token = RefreshToken(refresh_token)
-            token.blacklist()  # Blacklist the refresh token
+            token.blacklist()  # Blacklist the refresh token , refresh token can't be further used to generate access token 
             return Response(status=status.HTTP_205_RESET_CONTENT)
         except Exception as e:
+            # print(e)
             return Response(status=status.HTTP_400_BAD_REQUEST)
         
 
@@ -69,7 +82,7 @@ class ProductViewset(viewsets.ModelViewSet):
     serializer_class = ProductSeializer
     filter_backends=[DjangoFilterBackend,SearchFilter]  # use search filter for searching , and DjangoFilterBackend for filtering products on basis of fields 
     search_fields=['name','category__name']
-    filterset_fields = ['category', 'brand', 'price']
+    filterset_class=ProductFilter
     def get_permissions(self):
         # Define different permissions for different actions
         if self.action == 'list' or self.action == 'retrieve':
@@ -205,3 +218,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+##### Payement  handling related views #####
+##### Payement  handling related views #####

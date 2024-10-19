@@ -20,18 +20,6 @@ class User(AbstractUser):
     profile_img=models.ImageField(upload_to='UserProfileImages/',default='defaultProfileimg.png')
 
 
-class Brand(models.Model):
-    name=models.CharField(max_length=100)
-    def __str__(self) -> str:
-        return 'Brand - ' + self.name
-    
-
-class Tag(models.Model):
-    name=models.CharField(max_length=200)
-    def __str__(self) -> str:
-        return self.name
-
-
 class Category(models.Model):
     name = models.CharField(max_length=255, unique=True)
     slug = models.SlugField(max_length=255, unique=True, blank=True)
@@ -75,21 +63,20 @@ class Category(models.Model):
 class Product(models.Model):
     name            = models.CharField( max_length=255)
     img             = models.ImageField(upload_to='product_images/', default='defaultProduct.png')
-    brand           = models.ForeignKey(Brand,on_delete=models.CASCADE,related_name='products')
-    created_by      = models.ForeignKey(User,on_delete=models.CASCADE)
+    seller          = models.ForeignKey(User,on_delete=models.CASCADE)
     category        = models.ForeignKey(Category,related_name='products',on_delete=models.CASCADE)
     description     = models.TextField(help_text='Product description')
     author          = models.CharField(help_text='Name of author of book',null=True ,blank=True,max_length=100)  # when cateogory is book 
     specification   = models.JSONField(blank=True,null=True)
+    views           = models.IntegerField(default=0)
     price           = models.DecimalField(max_digits=7,decimal_places=2)  # here price unit is  Rs
     in_stock        = models.BooleanField(default=True)
     stock           = models.PositiveIntegerField()
-    tag             = models.ManyToManyField(Tag,related_name='products',blank=True)
     created_at      = models.DateTimeField( auto_now_add=True)
     updated_at      = models.DateTimeField( auto_now=True)
 
     def __str__(self):
-        return f"{self.name} of brand {self.brand.name} and category {self.category.name}"
+        return f"{self.name} of category {self.category.name} and seller {self.seller.get_full_name}"
     
 
 class Cart(models.Model):

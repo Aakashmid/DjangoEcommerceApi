@@ -13,9 +13,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-#)42z-wh!p-df(4c!5ci5xrp(6w=&@wb@ou*vy%9mv60!z^s_9'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = True # developemnt only
+# DEBUG = False # production only
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 
 # Application definition
@@ -28,6 +29,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
     'Store',
     'django_filters',
 ]
@@ -121,6 +123,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_ROOT=BASE_DIR /'media'
 MEDIA_URL="/media/"
 
+
 AUTH_USER_MODEL = 'Store.User'  # User model is my CustomUser model
 
 REST_FRAMEWORK={
@@ -139,3 +142,31 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=5),
     'ALGORITHM': 'HS256',
 }
+
+
+# logs 
+# settings.py
+
+LLOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {  # Handler for console (terminal)
+            'class': 'logging.StreamHandler',
+        },
+        'file': {  # Handler for saving logs to a file
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': 'debug.log',
+        },
+    },
+    'loggers': {
+        'django': {  # Logger for Django-related messages
+            'handlers': ['console'] if DEBUG else ['file'],  # Output to both console and file
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
+
+

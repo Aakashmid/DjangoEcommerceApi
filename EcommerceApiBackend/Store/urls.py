@@ -10,7 +10,7 @@ router = DefaultRouter()
 router.register('products',views.ProductViewset,basename='product') #### product's  endpoints
 router.register('categories',views.CategoryViewset,basename='category') #### category's  endpoints
 router.register('cart',views.CartViewSet,basename='cart') #### cart's  endpoints
-router.register('products/<int:product_id>/reviews',views.ReviewViewSet,basename='cart') #### reviews's  endpoints
+router.register('products/<int:product_id>/reviews',views.ReviewViewSet,basename='reviews') #### reviews's  endpoints
 
 urlpatterns = [
     path('',include(router.urls)),
