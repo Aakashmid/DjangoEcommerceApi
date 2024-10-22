@@ -9,9 +9,10 @@ from rest_framework.filters import SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.exceptions import ValidationError
 from rest_framework import status,viewsets , generics 
+import stripe
 from .filters import ProductFilter
-from .models import User, Product , Category , Cart , CartItem , Order, OrderItem , Review
-from .serializers import UserSerializer,ProfileSerializer,ProductSeializer, CategorySeriazlizer , CartItemSerializer,OrderSerializer, ReviewSerializer
+from .models import User, Product , Category , Cart , CartItem , Order, OrderItem , Review , Payment
+from .serializers import UserSerializer,ProfileSerializer,ProductSeializer, CategorySeriazlizer , CartItemSerializer,OrderSerializer, ReviewSerializer , PaymentSerializer 
 # Create your views here.
 
 
@@ -87,7 +88,7 @@ class ProductViewset(viewsets.ModelViewSet):
         # Define different permissions for different actions
         if self.action == 'list' or self.action == 'retrieve':
             # permission_classes = [IsAuthenticated]  # Only authenticated users can get data
-            permission_classes = [AllowAny]  # Only authenticated users can get data
+            permission_classes = [AllowAny]  # Only authenticated users can get data / only for testing puorpose in browsable api 
 
         elif self.action in ['create', 'update', 'partial_update', 'destroy']:
             # Only admins can create, update or delete
@@ -188,7 +189,7 @@ class OrderView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
+#### incomplete 
 class CancelOrder(APIView):
     def patch(self,request,*args, **kwargs):
         '''handle cancel order action , will change status of order '''
@@ -219,5 +220,39 @@ class ReviewViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+
+
+
 ##### Payement  handling related views #####
 ##### Payement  handling related views #####
+
+class PaymentInitializeView(APIView):
+    def post(self, request, *args, **kwargs):
+        serializer = PaymentSerializer(data=request.data)
+        if serializer.is_valid():
+            order = Order.objects.get(id=serializer.validated_data['order_id'])
+            
+            # Create a Stripe payment intent
+            intent = stripe.PaymentIntent.create(
+                amount=int(order.total_price * 100),  # Amount in cents
+                currency='usd',
+                payment_method_types=['card']
+            )
+            
+            # Create the Payment object in your DB
+            payment = Payment.objects.create(
+                user=request.user,
+                order=order,
+                amount=order.total_price,
+                stripe_payment_intent_id=intent['id'],
+                status='Pending'
+            )
+            
+            response_data = StripePaymentIntentSerializer({
+                'client_secret': intent['client_secret'],
+                'payment_intent_id': intent['id']
+            }).data
+
+            return Response(response_data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

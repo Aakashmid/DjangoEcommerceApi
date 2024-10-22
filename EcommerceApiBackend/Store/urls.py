@@ -20,7 +20,9 @@ urlpatterns = [
     path('auth/token/refresh/',TokenRefreshView.as_view(),name='token-refresh'),
 
     ####  profile endpoint
-    path('place-order/',views.OrderView.as_view(),name='place-order'),
-    # path('place-order/<int:order_id>/payement/',views.ProfileView.as_view(),name='profile-detail'),
     path('users/profile/',views.ProfileView.as_view(),name='profile-detail'),
+
+    path('place-order/',views.OrderView.as_view(),name='place-order'),
+    path('payements/initialize/',views.OrderView.as_view(),name='place-order'),
+    # path('place-order/<int:order_id>/payement/',views.ProfileView.as_view(),name='profile-detail'),
 ]

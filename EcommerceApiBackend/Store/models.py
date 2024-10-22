@@ -68,10 +68,11 @@ class Product(models.Model):
     description     = models.TextField(help_text='Product description')
     author          = models.CharField(help_text='Name of author of book',null=True ,blank=True,max_length=100)  # when cateogory is book 
     specification   = models.JSONField(blank=True,null=True)
-    views           = models.IntegerField(default=0)
     price           = models.DecimalField(max_digits=7,decimal_places=2)  # here price unit is  Rs
     in_stock        = models.BooleanField(default=True)
     stock           = models.PositiveIntegerField()
+    views           = models.IntegerField(default=0)
+    quantity        = models.IntegerField(default=1)
     created_at      = models.DateTimeField( auto_now_add=True)
     updated_at      = models.DateTimeField( auto_now=True)
 
@@ -80,7 +81,7 @@ class Product(models.Model):
     
 
 class Cart(models.Model):
-    user=models.ForeignKey(User,on_delete=models.CASCADE)
+    buyer=models.ForeignKey(User,related_name='carts',on_delete=models.CASCADE)
     created_at=models.DateTimeField(auto_now_add=True)
     updated_at=models.DateTimeField(auto_now=True)
     status = models.CharField(
@@ -123,12 +124,13 @@ class Address(models.Model):
 
 
 class Order(models.Model):
-    user        = models.ForeignKey(User, on_delete=models.CASCADE)
-    address     = models.ForeignKey(Address, on_delete=models.SET_NULL, null=True)
-    created_at  = models.DateTimeField(auto_now_add=True)
-    updated_at  = models.DateTimeField(auto_now=True)
-    total_price = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(
+    buyer                = models.ForeignKey(User, on_delete=models.CASCADE)
+    shipping_address     = models.ForeignKey(Address,related_name='shipping_orders', on_delete=models.SET_NULL, null=True)
+    billing_address      = models.ForeignKey(Address, related_name='billing_orders', on_delete=models.SET_NULL, null=True)
+    created_at           = models.DateTimeField(auto_now_add=True)
+    updated_at           = models.DateTimeField(auto_now=True)
+    total_price          = models.DecimalField(max_digits=10, decimal_places=2)
+    status               = models.CharField(
         max_length=20, 
         choices=[('pending', 'Pending'), ('shipped', 'Shipped'), ('delivered', 'Delivered')],
         default='pending'
@@ -160,16 +162,14 @@ class Payment(models.Model):
         ('bank_transfer', 'Bank Transfer'),
         ('cash_on_delivery', 'Cash on Delivery'),
     ]
-
-    id = models.AutoField(primary_key=True)
     method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    paid = models.BooleanField()
-    reference_num = models.CharField(max_length=50)
+    status = models.CharField(max_length=1 , choices=(('P', 'Pending'),('F', 'Failed'),('S','Success')))
     order = models.ForeignKey(
         Order, on_delete=models.DO_NOTHING, related_name="payment"
     )
-    payement_date = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at    = models.DateTimeField(auto_now=True) 
 
 
     def __str__(self):

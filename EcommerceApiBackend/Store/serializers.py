@@ -7,6 +7,9 @@ class AddressSerializer(serializers.ModelSerializer):
         fields = ['id', 'address', 'state', 'city', 'zip_code', 'phone', 'is_default']
 
 class UserSerializer(serializers.ModelSerializer):
+    """
+    Serializer for handling authenticated data responses
+    """
     password2 = serializers.CharField(write_only=True, required=True)
     class Meta:
         model=User
@@ -32,6 +35,9 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
+    '''
+    serializer for profile data response
+    '''
     name=serializers.SerializerMethodField()
     address=serializers.SerializerMethodField()
     class Meta:
@@ -99,13 +105,15 @@ class OrderSerializer(serializers.ModelSerializer):
     order_items = OrderItemSerializer(many=True, required=False)  # Optional for cart orders
     class Meta:
         model=Order
-        fields = ['id', 'user', 'address', 'total_price', 'status', 'order_items']
+        fields = ['id', 'buyer', 'address', 'total_price', 'status', 'order_items']
 
 
 class PaymentSerializer(serializers.ModelSerializer):
+    '''Serializer to CRUD payments for an order'''
+    buyer = serializers.CharField(source='order.buyer.get_name',read_only=True)  # Show the username as a string
     class Meta:
         model = Payment
-        fields = ['id', 'order', 'method', 'paid','reference_number']
+        fields = ['id', 'order', 'method', 'status','buyer','amount']
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -115,8 +123,3 @@ class ReviewSerializer(serializers.ModelSerializer):
         fields = ['id', 'product', 'user', 'rating', 'review_text', 'created_at']
         read_only_fields = ['created_at']
 
-
-# payment handlers serializer class
-# class PayementSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         pass
