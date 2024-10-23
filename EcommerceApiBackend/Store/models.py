@@ -9,7 +9,7 @@ from django.utils.text import slugify
 class User(AbstractUser):
     phone_number = models.CharField(
         max_length=10,
-        blank=True,null=True,
+        blank=True,null=True,unique=True,
         validators=[
             RegexValidator(
                 regex=r'^\d{10}$',
@@ -17,6 +17,7 @@ class User(AbstractUser):
             )
         ]
     )
+    email = models.EmailField(unique=True)
     profile_img=models.ImageField(upload_to='UserProfileImages/',default='defaultProfileimg.png')
 
 
@@ -29,7 +30,8 @@ class Category(models.Model):
     description = models.TextField(blank=True, null=True)
 
     class Meta:
-        verbose_name_plural = 'categories'
+        verbose_name='product category'
+        verbose_name_plural = 'product categories'
 
     def save(self, *args, **kwargs):
         # Automatically generate slug from name if not provided
@@ -80,6 +82,8 @@ class Product(models.Model):
         return f"{self.name} of category {self.category.name} and seller {self.seller.get_full_name}"
     
 
+    
+
 class Cart(models.Model):
     buyer=models.ForeignKey(User,related_name='carts',on_delete=models.CASCADE)
     created_at=models.DateTimeField(auto_now_add=True)
@@ -106,12 +110,12 @@ class CartItem(models.Model):
         return (self.price_at_time - (self.discount or 0)) * self.quantity
     
 class Address(models.Model):
-    user        = models.ForeignKey(User, on_delete=models.CASCADE, related_name='addresses')
-    address     = models.CharField(max_length=334)
-    state       = models.CharField(max_length=53)
-    city        = models.CharField(max_length=34)
-    zip_code    = models.CharField(max_length=12)
-    is_default  = models.BooleanField(default=False)  # Mark a default address
+    user               = models.ForeignKey(User, on_delete=models.CASCADE, related_name='addresses')
+    address_line_1     = models.CharField(max_length=334)
+    state              = models.CharField(max_length=53)
+    city               = models.CharField(max_length=34)
+    zip_code           = models.CharField(max_length=12)
+    is_default         = models.BooleanField(default=False)  # Mark a default address
 
     def __str__(self):
         return f"{self.address}, {self.city}, {self.state}, {self.zip_code}"
@@ -144,11 +148,11 @@ class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='order_items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
-    price_at_time = models.DecimalField(max_digits=10, decimal_places=2)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
 
     @property
     def total_price(self):
-        return self.quantity * self.price_at_time
+        return self.quantity * self.price
 
     def __str__(self):
         return f"{self.quantity} of {self.product.name}"

@@ -9,6 +9,7 @@ from rest_framework.filters import SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.exceptions import ValidationError
 from rest_framework import status,viewsets , generics 
+from .permissions import  IsAdminOrStaff
 import stripe
 from .filters import ProductFilter
 from .models import User, Product , Category , Cart , CartItem , Order, OrderItem , Review , Payment
@@ -81,22 +82,23 @@ class ProfileView(generics.RetrieveUpdateAPIView):
 class ProductViewset(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSeializer
+    permission_classes = [IsAdminOrStaff]
     filter_backends=[DjangoFilterBackend,SearchFilter]  # use search filter for searching , and DjangoFilterBackend for filtering products on basis of fields 
     search_fields=['name','category__name']
     filterset_class=ProductFilter
-    def get_permissions(self):
-        # Define different permissions for different actions
-        if self.action == 'list' or self.action == 'retrieve':
-            # permission_classes = [IsAuthenticated]  # Only authenticated users can get data
-            permission_classes = [AllowAny]  # Only authenticated users can get data / only for testing puorpose in browsable api 
+    # def get_permissions(self):
+    #     # Define different permissions for different actions
+    #     if self.action == 'list' or self.action == 'retrieve':
+    #         # permission_classes = [IsAuthenticated]  # Only authenticated users can get data
+    #         permission_classes = [AllowAny]  # Only authenticated users can get data / only for testing puorpose in browsable api 
 
-        elif self.action in ['create', 'update', 'partial_update', 'destroy']:
-            # Only admins can create, update or delete
-            permission_classes = [IsAdminUser]
-        else:
-            permission_classes = []  # No permissions by default
+    #     elif self.action in ['create', 'update', 'partial_update', 'destroy']:
+    #         # Only admins can create, update or delete
+    #         permission_classes = [IsAdminUser]
+    #     else:
+    #         permission_classes = []  # No permissions by default
 
-        return [permission() for permission in permission_classes]
+    #     return [permission() for permission in permission_classes]
     
     def perform_create(self,serializer):
         serializer.save(created_by=self.request.user)
@@ -114,19 +116,20 @@ class ProductViewset(viewsets.ModelViewSet):
 class CategoryViewset(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySeriazlizer
-    def get_permissions(self):
-        # Define different permissions for different actions
-        if self.action == 'list' or self.action == 'retrieve':
-            # permission_classes = [IsAuthenticated]  # Only authenticated users can get data
-            permission_classes = [AllowAny]  # Only authenticated users can get data
+    permission_classes=[IsAdminOrStaff]
+    # def get_permissions(self):
+    #     # Define different permissions for different actions
+    #     if self.action == 'list' or self.action == 'retrieve':
+    #         # permission_classes = [IsAuthenticated]  # Only authenticated users can get data
+    #         permission_classes = [AllowAny]  # Only authenticated users can get data
 
-        elif self.action in ['create', 'update', 'partial_update', 'destroy']:
-            # Only admins can create, update or delete
-            permission_classes = [IsAdminUser]
-        else:
-            permission_classes = []  # No permissions by default
+    #     elif self.action in ['create', 'update', 'partial_update', 'destroy']:
+    #         # Only admins can create, update or delete
+    #         permission_classes = [IsAdminUser]
+    #     else:
+    #         permission_classes = []  # No permissions by default
 
-        return [permission() for permission in permission_classes]
+    #     return [permission() for permission in permission_classes]
     
 
 class CartViewSet(viewsets.ModelViewSet): 
@@ -226,6 +229,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 ##### Payement  handling related views #####
 ##### Payement  handling related views #####
 
+### incomplete view
 class PaymentInitializeView(APIView):
     def post(self, request, *args, **kwargs):
         serializer = PaymentSerializer(data=request.data)

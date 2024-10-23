@@ -1,3 +1,6 @@
+from django.utils.translation import gettext
+from django.shortcuts import get_object_or_404
+from django.urls import reverse
 from .models import Category , Product,User, Cart , CartItem , Address, Order, OrderItem,Review , Payment
 from rest_framework import serializers
 
@@ -18,7 +21,7 @@ class UserSerializer(serializers.ModelSerializer):
     
     def validate(self, attrs):
         if attrs['password']!=attrs['password2']:
-            raise serializers.ValidationError({"password":'password field does\'nt match ' })
+            raise serializers.ValidationError({"password":'password field does not match ' })
         return attrs
     
     def create(self, validated_data):
@@ -58,9 +61,17 @@ class ProfileSerializer(serializers.ModelSerializer):
         return AddressSerializer(default_address).data
     
 class CategorySeriazlizer(serializers.ModelSerializer):
+    parent_name = serializers.SerializerMethodField()  # Get the parent category's name
     class Meta:
         model=Category
-        fields=['id','name','slug','description','parent']
+        fields=['id','name','slug','description','parent_name']
+
+    
+    def get_parent_name(self,category):
+        cat_parent=get_object_or_404(Category,id=category.parent)
+        return cat_parent.name
+
+
 
 
 class ProductSeializer(serializers.ModelSerializer):
