@@ -17,7 +17,7 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'price', 'in_stock', 'stock', 'views')
+    list_display = ('id', 'name','category__name' , 'price','is_in_stock', 'stock', 'views')
 
 @admin.register(Cart)
 class CartAdmin(admin.ModelAdmin):

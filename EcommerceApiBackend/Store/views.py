@@ -101,7 +101,7 @@ class ProductViewset(viewsets.ModelViewSet):
     #     return [permission() for permission in permission_classes]
     
     def perform_create(self,serializer):
-        serializer.save(created_by=self.request.user)
+        serializer.save(seller=self.request.user)
 
      # Override the update method to handle partial updates with PUT
     def update(self, request, *args, **kwargs):
@@ -115,8 +115,8 @@ class ProductViewset(viewsets.ModelViewSet):
 
 class CategoryViewset(viewsets.ModelViewSet):
     queryset = Category.objects.all()
-    serializer_class = CategorySeriazlizer
     permission_classes=[IsAdminOrStaff]
+    serializer_class = CategorySeriazlizer
     # def get_permissions(self):
     #     # Define different permissions for different actions
     #     if self.action == 'list' or self.action == 'retrieve':

@@ -75,16 +75,19 @@ class CategorySeriazlizer(serializers.ModelSerializer):
 
 
 class ProductSeializer(serializers.ModelSerializer):
+    category_name = serializers.SerializerMethodField() # Get the category
     class Meta:
         model=Product
-        fields= ['id', 'name','img', 'description', 'price', 'category', 'author','specification','in_stock','stock','views']
+        fields= ['id', 'name','img', 'description', 'price', 'category','category_name', 'author','specification','is_in_stock','stock','views']
 
     def validate(self,data):
         category=data.get('category').name.lower() if data.get('category',None) is not None else ""
         if (category == "books" or category == 'book' ) and not  data.get('author'):
-            raise serializers.ValidationError({"author":"This field is required"})
-            
+            raise serializers.ValidationError({"author":"This field is required"})        
         return data
+    
+    def get_category_name(self,obj):
+        return obj.category.name
 
 
 class CartItemSerializer(serializers.ModelSerializer):
