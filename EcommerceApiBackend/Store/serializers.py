@@ -64,21 +64,18 @@ class CategorySeriazlizer(serializers.ModelSerializer):
     parent_name = serializers.SerializerMethodField()  # Get the parent category's name
     class Meta:
         model=Category
-        fields=['id','name','slug','description','parent_name']
+        fields=['id','name','slug','description','parent','parent_name']
 
     
     def get_parent_name(self,category):
-        cat_parent=get_object_or_404(Category,id=category.parent)
-        return cat_parent.name
-
-
+        return category.parent.name if category.parent is not None else None
 
 
 class ProductSeializer(serializers.ModelSerializer):
     category_name = serializers.SerializerMethodField() # Get the category
     class Meta:
         model=Product
-        fields= ['id', 'name','img', 'description', 'price', 'category','category_name', 'author','specification','is_in_stock','stock','views']
+        fields= ['id', 'name','img', 'description', 'price', 'category','category_name', 'author','specification','is_in_stock','stock','views','seller']
 
     def validate(self,data):
         category=data.get('category').name.lower() if data.get('category',None) is not None else ""
@@ -94,7 +91,7 @@ class CartItemSerializer(serializers.ModelSerializer):
     total_price = serializers.SerializerMethodField()
     class Meta:
         model = CartItem
-        fields=['id','product','quantitiy','price_at_time','discount','total_price']
+        fields=['id','product','quantity','price_at_time','discount','total_price']
 
     def get_total_price(self,obj):
         return obj.total_price

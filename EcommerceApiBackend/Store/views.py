@@ -1,6 +1,6 @@
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
-from rest_framework.decorators import api_view,permission_classes 
+from rest_framework.decorators import api_view,permission_classes ,action
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny,IsAuthenticated,IsAdminUser
@@ -9,7 +9,7 @@ from rest_framework.filters import SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.exceptions import ValidationError
 from rest_framework import status,viewsets , generics 
-from .permissions import  IsAdminOrStaff
+from .permissions import  IsAdminOrStaff,IsSellerOrReadOnly
 import stripe
 from .filters import ProductFilter
 from .models import User, Product , Category , Cart , CartItem , Order, OrderItem , Review , Payment
@@ -82,24 +82,11 @@ class ProfileView(generics.RetrieveUpdateAPIView):
 class ProductViewset(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSeializer
-    permission_classes = [IsAdminOrStaff]
+    permission_classes = [IsSellerOrReadOnly]
     filter_backends=[DjangoFilterBackend,SearchFilter]  # use search filter for searching , and DjangoFilterBackend for filtering products on basis of fields 
     search_fields=['name','category__name']
     filterset_class=ProductFilter
-    # def get_permissions(self):
-    #     # Define different permissions for different actions
-    #     if self.action == 'list' or self.action == 'retrieve':
-    #         # permission_classes = [IsAuthenticated]  # Only authenticated users can get data
-    #         permission_classes = [AllowAny]  # Only authenticated users can get data / only for testing puorpose in browsable api 
-
-    #     elif self.action in ['create', 'update', 'partial_update', 'destroy']:
-    #         # Only admins can create, update or delete
-    #         permission_classes = [IsAdminUser]
-    #     else:
-    #         permission_classes = []  # No permissions by default
-
-    #     return [permission() for permission in permission_classes]
-    
+  
     def perform_create(self,serializer):
         serializer.save(seller=self.request.user)
 
@@ -112,37 +99,38 @@ class ProductViewset(viewsets.ModelViewSet):
 
         return Response(serializer.data, status=status.HTTP_200_OK)
     
+    @action(detail=True, methods=['post'],url_path='increment-views')
+    def increase_views(self, request, pk=None):
+        """Increase the views count of a specific product"""
+        product = self.get_object()
+        product.views += 1
+        product.save()
+        return Response({"status": "success", "views": product.views,'product_id':product.id}, status=status.HTTP_200_OK)
+
 
 class CategoryViewset(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     permission_classes=[IsAdminOrStaff]
     serializer_class = CategorySeriazlizer
-    # def get_permissions(self):
-    #     # Define different permissions for different actions
-    #     if self.action == 'list' or self.action == 'retrieve':
-    #         # permission_classes = [IsAuthenticated]  # Only authenticated users can get data
-    #         permission_classes = [AllowAny]  # Only authenticated users can get data
 
-    #     elif self.action in ['create', 'update', 'partial_update', 'destroy']:
-    #         # Only admins can create, update or delete
-    #         permission_classes = [IsAdminUser]
-    #     else:
-    #         permission_classes = []  # No permissions by default
-
-    #     return [permission() for permission in permission_classes]
-    
-
-class CartViewSet(viewsets.ModelViewSet): 
+class CartViewset(viewsets.ModelViewSet): 
     queryset = CartItem.objects.all()
     serializer_class = CartItemSerializer
 
     def get_queryset(self):
-        cart=get_object_or_404(Cart,user=self.request.user)
+        cart, created = Cart.objects.get_or_create(buyer=self.request.user)
         return CartItem.objects.filter(cart=cart)
-
+    
     def perform_create(self, serializer):
-        cart=get_object_or_404(Cart,user=self.request.user)
+        '''Add item to cart '''
+        cart=get_object_or_404(Cart,buyer=self.request.user)
         serializer.save(cart=cart)
+
+    @action(detail=False,methods=['delete'])
+    def clear_cart(self,request):
+        cart=get_object_or_404(Cart,buyer=self.request.user)
+        cart.cart_items.all().delete()
+        return Response({"status": "success", "message": "Cart cleared successfully"}, status=status.HTTP_200_OK)
 
 
 class OrderView(APIView):
