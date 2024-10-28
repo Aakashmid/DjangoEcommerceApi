@@ -87,7 +87,7 @@ class Product(models.Model):
     
 
 class Cart(models.Model):
-    buyer=models.ForeignKey(User,related_name='carts',on_delete=models.CASCADE)
+    buyer=models.OneToOneField(User,related_name='cart',on_delete=models.CASCADE)
     created_at=models.DateTimeField(auto_now_add=True)
     updated_at=models.DateTimeField(auto_now=True)
     status = models.CharField(
@@ -97,20 +97,26 @@ class Cart(models.Model):
     )
 
     def total_price(self):
-        return sum(item.total_price for item in self.cartitem_set.all())
+        return sum(item.total_price for item in self.cart_item.all())
+    
+    def __str__(self):
+        return f"Cart of {self.buyer.get_full_name}"
     
 
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE,related_name='cart_items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
-    price_at_time = models.DecimalField(max_digits=10, decimal_places=2)  # Snapshot of the price
-    discount = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
 
     @property
     def total_price(self):
-        return (self.price_at_time - (self.discount or 0)) * self.quantity
+        effective_price = self.product.price
+        return effective_price * self.quantity
+
+    def __str__(self):
+        return f"cart item of id {self.id} with quantity {self.quantity} and price {self.total_price}"
     
+
 class Address(models.Model):
     user               = models.ForeignKey(User, on_delete=models.CASCADE, related_name='addresses')
     address_line_1     = models.CharField(max_length=334)

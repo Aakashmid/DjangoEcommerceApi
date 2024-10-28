@@ -45,7 +45,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     address=serializers.SerializerMethodField()
     class Meta:
         model=User
-        fields=['id','username','email','profile_img','name','phone_number','address']
+        fields=['id','username','email','profile_img','name','phone_number','address','is_seller']
 
     # def perform create 
 
@@ -87,14 +87,25 @@ class ProductSeializer(serializers.ModelSerializer):
         return obj.category.name
 
 
+class CartSerializer(serializers.ModelSerializer):
+    total_items = serializers.SerializerMethodField()
+    class Meta:
+        model = Cart
+        fields=['id','total_items','total_price','status','updated_at','created_at']
+
+    def get_total_items(self,cart):
+        return len(cart.cart_items.all())
+
+
 class CartItemSerializer(serializers.ModelSerializer):
     total_price = serializers.SerializerMethodField()
     class Meta:
         model = CartItem
-        fields=['id','product','quantity','price_at_time','discount','total_price']
+        fields=['id','product','quantity','total_price']
 
     def get_total_price(self,obj):
         return obj.total_price
+    
 
 
 class OrderItemSerializer(serializers.ModelSerializer):

@@ -11,9 +11,9 @@ from rest_framework.exceptions import ValidationError
 from rest_framework import status,viewsets , generics 
 from .permissions import  IsAdminOrStaff,IsSellerOrReadOnly
 import stripe
-from .filters import ProductFilter
+from .filters import ProductFilter,CustomSearchFilter
 from .models import User, Product , Category , Cart , CartItem , Order, OrderItem , Review , Payment
-from .serializers import UserSerializer,ProfileSerializer,ProductSeializer, CategorySeriazlizer , CartItemSerializer,OrderSerializer, ReviewSerializer , PaymentSerializer 
+from .serializers import UserSerializer,ProfileSerializer,ProductSeializer, CategorySeriazlizer , CartItemSerializer,OrderSerializer, ReviewSerializer , PaymentSerializer , CartSerializer
 # Create your views here.
 
 
@@ -83,8 +83,8 @@ class ProductViewset(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSeializer
     permission_classes = [IsSellerOrReadOnly]
-    filter_backends=[DjangoFilterBackend,SearchFilter]  # use search filter for searching , and DjangoFilterBackend for filtering products on basis of fields 
-    search_fields=['name','category__name']
+    filter_backends=[DjangoFilterBackend,CustomSearchFilter]  # use search filter for searching , and DjangoFilterBackend for filtering products on basis of fields 
+    search_fields=['name','category__name','description','author']
     filterset_class=ProductFilter
   
     def perform_create(self,serializer):
@@ -113,6 +113,12 @@ class CategoryViewset(viewsets.ModelViewSet):
     permission_classes=[IsAdminOrStaff]
     serializer_class = CategorySeriazlizer
 
+
+class CartDetailView(generics.RetrieveAPIView):
+    serializer_class = CartSerializer
+    def get_object(self):
+        return get_object_or_404(Cart, buyer=self.request.user)
+
 class CartViewset(viewsets.ModelViewSet): 
     queryset = CartItem.objects.all()
     serializer_class = CartItemSerializer
@@ -121,10 +127,22 @@ class CartViewset(viewsets.ModelViewSet):
         cart, created = Cart.objects.get_or_create(buyer=self.request.user)
         return CartItem.objects.filter(cart=cart)
     
+    def get_object(self):
+        queryset = self.get_queryset()
+        item_id = self.kwargs.get('item_id')
+        return get_object_or_404(queryset, id=item_id)  # Assuming 'id' is the primary key
+    
     def perform_create(self, serializer):
         '''Add item to cart '''
         cart=get_object_or_404(Cart,buyer=self.request.user)
         serializer.save(cart=cart)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)  # Set partial=True for PUT requests
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False,methods=['delete'])
     def clear_cart(self,request):

@@ -25,7 +25,7 @@ class CartAdmin(admin.ModelAdmin):
 
 @admin.register(CartItem)
 class CartItemAdmin(admin.ModelAdmin):
-    list_display = ('id', 'cart', 'product', 'quantity', 'price_at_time')
+    list_display = ('id', 'cart', 'product', 'quantity','total_price')
 
 @admin.register(Address)
 class AddressAdmin(admin.ModelAdmin):

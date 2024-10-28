@@ -31,10 +31,11 @@ urlpatterns = [
 
 
     ### CART ENDPOINTS
+    path('mycart/',views.CartDetailView.as_view(),name='cart-detail'),
     path('cart/add-item/',views.CartViewset.as_view({'post':'create'}),name='cart-create'),
     path('cart/items/',views.CartViewset.as_view({'get':'list'}),name='cart-list'),
-    path('cart/update-item/<int:item_id>/',views.CartViewset.as_view({'put':'update'}),name='cart-item-update'),
-    path('cart/remove-item//<int:item_id>',views.CartViewset.as_view({'delete':'destroy'}),name='cart-item-remove'),
+    path('cart/update-item/<int:item_id>/',views.CartViewset.as_view({'patch':'update','put':'update'}),name='cart-item-update'),
+    path('cart/remove-item/<int:item_id>/',views.CartViewset.as_view({'delete':'destroy'}),name='cart-item-remove'),
     path('cart/clear/',views.CartViewset.as_view({'delete':'clear_cart'}),name='clear-cart'),
 
 
