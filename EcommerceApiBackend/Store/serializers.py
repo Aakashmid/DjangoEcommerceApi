@@ -71,7 +71,7 @@ class CategorySeriazlizer(serializers.ModelSerializer):
         return category.parent.name if category.parent is not None else None
 
 
-class ProductSeializer(serializers.ModelSerializer):
+class ProductSerializer(serializers.ModelSerializer):
     category_name = serializers.SerializerMethodField() # Get the category
     class Meta:
         model=Product
@@ -99,35 +99,51 @@ class CartSerializer(serializers.ModelSerializer):
 
 class CartItemSerializer(serializers.ModelSerializer):
     total_price = serializers.SerializerMethodField()
+    product_id = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(),write_only=True)
+    product= ProductSerializer(read_only= True)
     class Meta:
         model = CartItem
-        fields=['id','product','quantity','total_price']
-
+        fields=['id','product','product_id','quantity','total_price']
+        # depth=1
+        
     def get_total_price(self,obj):
         return obj.total_price
-    
-
-
-class OrderItemSerializer(serializers.ModelSerializer):
-    total_price = serializers.SerializerMethodField()
-    class Meta:
-        model=OrderItem
-        fields=['id',"product",'quantity','total_price']  # total price is read_only
     
     def create(self, validated_data):
-        product = validated_data['product']
-        validated_data['price_at_time'] = product.price 
-        return super().create(validated_data)
+        product_id = validated_data.pop('product_id')
+        cartitem = CartItem.objects.create(product=product_id,**validated_data)
+        return cartitem
     
-    def get_total_price(self,obj):
-        return obj.total_price
 
-
-class OrderSerializer(serializers.ModelSerializer):
-    order_items = OrderItemSerializer(many=True, required=False)  # Optional for cart orders
+class OrderItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=OrderItem
+        fields=['id','product','quantity','total_price']  # total price is read_only
+        extra_kwargs={'total_price':{"read_only":True}}
+    
+class OrderReadSerializer(serializers.ModelSerializer):
+    order_items = OrderItemSerializer(many=True)  # Optional for cart orders
     class Meta:
         model=Order
-        fields = ['id', 'buyer', 'address', 'total_price', 'status', 'order_items']
+        fields = ['id', 'buyer', 'billing_address','shipping_address', 'total_price', 'status', 'order_items']
+        extra_kwargs={'total_price':{"read_only":True},'order_items':{'read_only':True}}
+
+
+class OrderWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = ['id', 'buyer', 'billing_address', 'shipping_address', 'order_items']
+    # def create(self, validated_data):
+    #     order_items_data = validated_data.pop('order_items')
+    #     # print(product_id)
+    #     # product_id = order_items_data.pop('product_id')
+    #     # product = get_object_or_404(Product, id=product_id)
+    #     print(order_items_data)
+    #     order = Order.objects.create(**validated_data)
+    #     for order_item_data in order_items_data:
+    #         OrderItem.objects.create(order=order,**order_item_data)
+        
+    #     return order
 
 
 class PaymentSerializer(serializers.ModelSerializer):

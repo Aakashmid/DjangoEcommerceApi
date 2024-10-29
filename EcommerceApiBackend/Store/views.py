@@ -13,7 +13,7 @@ from .permissions import  IsAdminOrStaff,IsSellerOrReadOnly
 import stripe
 from .filters import ProductFilter,CustomSearchFilter
 from .models import User, Product , Category , Cart , CartItem , Order, OrderItem , Review , Payment
-from .serializers import UserSerializer,ProfileSerializer,ProductSeializer, CategorySeriazlizer , CartItemSerializer,OrderSerializer, ReviewSerializer , PaymentSerializer , CartSerializer
+from .serializers import UserSerializer,ProfileSerializer,ProductSerializer, CategorySeriazlizer , CartItemSerializer,OrderReadSerializer,OrderWriteSerializer, ReviewSerializer , PaymentSerializer , CartSerializer , OrderItemSerializer
 # Create your views here.
 
 
@@ -81,7 +81,7 @@ class ProfileView(generics.RetrieveUpdateAPIView):
 
 class ProductViewset(viewsets.ModelViewSet):
     queryset = Product.objects.all()
-    serializer_class = ProductSeializer
+    serializer_class = ProductSerializer
     permission_classes = [IsSellerOrReadOnly]
     filter_backends=[DjangoFilterBackend,CustomSearchFilter]  # use search filter for searching , and DjangoFilterBackend for filtering products on basis of fields 
     search_fields=['name','category__name','description','author']
@@ -151,44 +151,47 @@ class CartViewset(viewsets.ModelViewSet):
         return Response({"status": "success", "message": "Cart cleared successfully"}, status=status.HTTP_200_OK)
 
 
+#### INcomplete 
 class OrderView(APIView):
     '''handling two order case , through cart or without cart '''
     def post(self,request,*args, **kwargs):
-        user=request.user
         if 'product_id' in request.data:            
-            product_id = request.data['product_id']
+            product_id = request.data.get('product_id',None)
+            # print(f"product_id: {int(product_id)}")
             quantity = request.data.get('quantity', 1)
-            
+            data = {'product':product_id, 'quantity':quantity}
+            ItemSerializer= OrderItemSerializer(data=data)
             # Prepare data for a single product order
-            order_data = {
-                'user': user.id,
-                'address': request.data.get('address'),
-                'order_items': [
-                    {
-                        'product': product_id,
-                        'quantity': quantity,
-                    }
-                ]
-            }
-            serializer = OrderSerializer(data=order_data)
+            if ItemSerializer.is_valid():
+                item = ItemSerializer.save()
+                order_data = {
+                    'buyer': request.user.id,
+                    'billing_address': request.data.get('billing_address'),
+                    'shipping_address': request.data.get('shipping_address'),
+                    'order_items':item.data 
+                }
+            else:
+                return Response(ItemSerializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            serializer = OrderWriteSerializer(data=order_data)
         
-        elif 'cart_items' in request.data:
-            cart_items = request.data['cart_items']
-            order_items_data = []
+        # elif 'cart_items' in request.data:
+        #     cart_items = request.data['cart_items']
+        #     order_items_data = []
 
-            # Prepare data for multiple cart items
-            for item in cart_items:
-                order_items_data.append({
-                    'product': item['product_id'],  # Assuming cart item has product_id
-                    'quantity': item.get('quantity', 1),
-                })
+        #     # Prepare data for multiple cart items
+        #     for item in cart_items:
+        #         order_items_data.append({
+        #             'product': item['product_id'],  # Assuming cart item has product_id
+        #             'quantity': item.get('quantity', 1),
+        #         })
 
-            order_data = {
-                'user': user.id,
-                'address': request.data.get('address'),
-                'order_items': order_items_data,
-            }
-            serializer = OrderSerializer(data=order_data)
+        #     order_data = {
+        #         'buyer': request.user.id,
+        #         'billing_address': request.data.get('billing_address'),
+        #         'shipping_address': request.data.get('shipping_address'),
+        #         'order_items': order_items_data,
+        #     }
+        #     serializer = OrderWriteSerializer(data=order_data)
 
         else:
             return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
@@ -206,13 +209,13 @@ class CancelOrder(APIView):
         
 
 class OrderListView(generics.ListAPIView):
-    serializer_class=OrderSerializer
+    serializer_class=OrderReadSerializer
     def get_queryset(self):
         return Order.objects.filter(user=self.request.user)
     
 
 class OrderDetailView(generics.RetrieveAPIView):
-    serializer_class=OrderSerializer
+    serializer_class=OrderReadSerializer
     def get_queryset(self):
         return Order.objects.filter(user=self.request.user)
 

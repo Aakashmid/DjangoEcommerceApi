@@ -33,11 +33,11 @@ class AddressAdmin(admin.ModelAdmin):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'buyer', 'billing_address','shipping_address', 'created_at', 'updated_at', 'status')
+    list_display = ('id', 'buyer', 'billing_address','shipping_address', 'created_at', 'status','total_price')
 
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
-    list_display = ('id', 'order', 'product', 'quantity', 'price')
+    list_display = ('id', 'order', 'product', 'quantity', 'total_price')
 
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):

@@ -97,7 +97,7 @@ class Cart(models.Model):
     )
 
     def total_price(self):
-        return sum(item.total_price for item in self.cart_item.all())
+        return sum(item.total_price for item in self.cart_items.all())
     
     def __str__(self):
         return f"Cart of {self.buyer.get_full_name}"
@@ -141,12 +141,15 @@ class Order(models.Model):
     billing_address      = models.ForeignKey(Address, related_name='billing_orders', on_delete=models.SET_NULL, null=True)
     created_at           = models.DateTimeField(auto_now_add=True)
     updated_at           = models.DateTimeField(auto_now=True)
-    total_price          = models.DecimalField(max_digits=10, decimal_places=2)
     status               = models.CharField(
         max_length=20, 
         choices=[('pending', 'Pending'), ('shipped', 'Shipped'), ('delivered', 'Delivered')],
         default='pending'
     )
+
+    @property
+    def total_price(self):
+        return sum(i.total_price for i in  self.order_items.all())
 
     def __str__(self) -> str:
         return f"Order {self.id} - {self.user.username}"
@@ -156,11 +159,10 @@ class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='order_items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
-    price = models.DecimalField(max_digits=10, decimal_places=2)
 
     @property
     def total_price(self):
-        return self.quantity * self.price
+        return self.quantity * self.product.price
 
     def __str__(self):
         return f"{self.quantity} of {self.product.name}"
