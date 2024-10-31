@@ -3,6 +3,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator,MinValueValidator,MaxValueValidator
 from django.utils.text import slugify
+from django.utils.functional import cached_property
 # Create your models here.
 
 
@@ -96,8 +97,8 @@ class Cart(models.Model):
         default='active'
     )
 
-    def total_price(self):
-        return sum(item.total_price for item in self.cart_items.all())
+    def total_cost(self):
+        return sum(item.total_cost for item in self.cart_items.all())
     
     def __str__(self):
         return f"Cart of {self.buyer.get_full_name}"
@@ -109,7 +110,7 @@ class CartItem(models.Model):
     quantity = models.PositiveIntegerField(default=1)
 
     @property
-    def total_price(self):
+    def total_cost(self):
         effective_price = self.product.price
         return effective_price * self.quantity
 
@@ -160,9 +161,12 @@ class OrderItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
 
-    @property
-    def total_price(self):
-        return self.quantity * self.product.price
+    @cached_property
+    def cost(self):
+        """
+        Total cost of the ordered item
+        """
+        return round(self.quantity * self.product.price, 2)
 
     def __str__(self):
         return f"{self.quantity} of {self.product.name}"

@@ -9,7 +9,7 @@ from rest_framework.filters import SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.exceptions import ValidationError
 from rest_framework import status,viewsets , generics 
-from .permissions import  IsAdminOrStaff,IsSellerOrReadOnly
+from .permissions import  IsAdminOrStaff,IsSellerOrReadOnly , IsOrderItemByBuyerOrAdmin , IsOrderItemPending,IsOrderPending, IsOrderByBuyerOrAdmin
 import stripe
 from .filters import ProductFilter,CustomSearchFilter
 from .models import User, Product , Category , Cart , CartItem , Order, OrderItem , Review , Payment
@@ -151,73 +151,129 @@ class CartViewset(viewsets.ModelViewSet):
         return Response({"status": "success", "message": "Cart cleared successfully"}, status=status.HTTP_200_OK)
 
 
+class OrderItemViewSet(viewsets.ModelViewSet):
+    """
+    CRUD order items that are associated with the current order id.
+    """
+
+    queryset = OrderItem.objects.all()
+    serializer_class = OrderItemSerializer
+    permission_classes = [IsOrderItemByBuyerOrAdmin]
+
+    def get_queryset(self):
+        res = super().get_queryset()
+        order_id = self.kwargs.get("order_id")
+        return res.filter(order__id=order_id)
+
+    def perform_create(self, serializer):
+        order = get_object_or_404(Order, id=self.kwargs.get("order_id"))
+        serializer.save(order=order)
+
+    def get_permissions(self):
+        if self.action in ("create", "update", "partial_update", "destroy"):
+            self.permission_classes += [IsOrderItemPending]
+
+        return super().get_permissions()
+
+
 #### INcomplete 
-class OrderView(APIView):
-    '''handling two order case , through cart or without cart '''
-    def post(self,request,*args, **kwargs):
-        if 'product_id' in request.data:            
-            product_id = request.data.get('product_id',None)
-            # print(f"product_id: {int(product_id)}")
-            quantity = request.data.get('quantity', 1)
-            data = {'product':product_id, 'quantity':quantity}
-            ItemSerializer= OrderItemSerializer(data=data)
-            # Prepare data for a single product order
-            if ItemSerializer.is_valid():
-                item = ItemSerializer.save()
-                order_data = {
-                    'buyer': request.user.id,
-                    'billing_address': request.data.get('billing_address'),
-                    'shipping_address': request.data.get('shipping_address'),
-                    'order_items':item.data 
-                }
-            else:
-                return Response(ItemSerializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            serializer = OrderWriteSerializer(data=order_data)
+# class OrderView(APIView):
+#     '''handling two order case , through cart or without cart '''
+#     def post(self,request,*args, **kwargs):
+#         if 'product_id' in request.data:            
+#             product_id = request.data.get('product_id',None)
+#             # print(f"product_id: {int(product_id)}")
+#             quantity = request.data.get('quantity', 1)
+#             data = {'product':product_id, 'quantity':quantity}
+#             # ItemSerializer= OrderItemSerializer(data=data)
+#             # Prepare data for a single product order
+#             # if ItemSerializer.is_valid():
+#                 # item = ItemSerializer.save()
+#             order_data = {
+#                 'buyer': request.user.id,
+#                 'billing_address': request.data.get('billing_address'),
+#                 'shipping_address': request.data.get('shipping_address'),
+#                 'order_items':[{
+#                     'product':int(product_id),
+#                     'quantity':int(quantity)
+#                 }]
+#             }
+
+#             # else:
+#             #     return Response(ItemSerializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#             serializer = OrderWriteSerializer(data=order_data)
         
-        # elif 'cart_items' in request.data:
-        #     cart_items = request.data['cart_items']
-        #     order_items_data = []
+#         # elif 'cart_items' in request.data:
+#         #     cart_items = request.data['cart_items']
+#         #     order_items_data = []
 
-        #     # Prepare data for multiple cart items
-        #     for item in cart_items:
-        #         order_items_data.append({
-        #             'product': item['product_id'],  # Assuming cart item has product_id
-        #             'quantity': item.get('quantity', 1),
-        #         })
+#         #     # Prepare data for multiple cart items
+#         #     for item in cart_items:
+#         #         order_items_data.append({
+#         #             'product': item['product_id'],  # Assuming cart item has product_id
+#         #             'quantity': item.get('quantity', 1),
+#         #         })
 
-        #     order_data = {
-        #         'buyer': request.user.id,
-        #         'billing_address': request.data.get('billing_address'),
-        #         'shipping_address': request.data.get('shipping_address'),
-        #         'order_items': order_items_data,
-        #     }
-        #     serializer = OrderWriteSerializer(data=order_data)
+#         #     order_data = {
+#         #         'buyer': request.user.id,
+#         #         'billing_address': request.data.get('billing_address'),
+#         #         'shipping_address': request.data.get('shipping_address'),
+#         #         'order_items': order_items_data,
+#         #     }
+#         #     serializer = OrderWriteSerializer(data=order_data)
 
-        else:
-            return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
+#         else:
+#             return Response({"error": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
         
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 #### incomplete 
-class CancelOrder(APIView):
-    def patch(self,request,*args, **kwargs):
-        '''handle cancel order action , will change status of order '''
-        pass
+# class CancelOrder(APIView):
+#     def patch(self,request,*args, **kwargs):
+#         '''handle cancel order action , will change status of order '''
+#         pass
         
 
-class OrderListView(generics.ListAPIView):
-    serializer_class=OrderReadSerializer
+class OrderViewSet(viewsets.ModelViewSet):
+    """
+    CRUD orders of a user
+    """
+    queryset = Order.objects.all()
+    permission_classes = [IsOrderByBuyerOrAdmin]
+
+    def get_serializer_class(self):
+        if self.action in ("create", "update", "partial_update", "destroy"):
+            return OrderWriteSerializer
+
+        return OrderReadSerializer
+
     def get_queryset(self):
-        return Order.objects.filter(user=self.request.user)
+        res = super().get_queryset()
+        user = self.request.user
+        return res.filter(buyer=user)
+
+    def get_permissions(self):
+        if self.action in ("update", "partial_update", "destroy"):
+            self.permission_classes += [IsOrderPending]
+
+        return super().get_permissions()
+
+
+
+# class OrderListView(generics.ListAPIView):
+#     serializer_class=OrderReadSerializer
+#     def get_queryset(self):
+#         return Order.objects.filter(user=self.request.user)
     
 
-class OrderDetailView(generics.RetrieveAPIView):
-    serializer_class=OrderReadSerializer
-    def get_queryset(self):
-        return Order.objects.filter(user=self.request.user)
+# class OrderDetailView(generics.RetrieveAPIView):
+#     serializer_class=OrderReadSerializer
+#     def get_queryset(self):
+#         return Order.objects.filter(user=self.request.user)
 
 
 class ReviewViewSet(viewsets.ModelViewSet):

@@ -25,7 +25,7 @@ class CartAdmin(admin.ModelAdmin):
 
 @admin.register(CartItem)
 class CartItemAdmin(admin.ModelAdmin):
-    list_display = ('id', 'cart', 'product', 'quantity','total_price')
+    list_display = ('id', 'cart', 'product', 'quantity','total_cost')
 
 @admin.register(Address)
 class AddressAdmin(admin.ModelAdmin):
@@ -33,11 +33,11 @@ class AddressAdmin(admin.ModelAdmin):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'buyer', 'billing_address','shipping_address', 'created_at', 'status','total_price')
+    list_display = ('id', 'buyer', 'billing_address','shipping_address', 'created_at', 'status','total_cost')
 
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
-    list_display = ('id', 'order', 'product', 'quantity', 'total_price')
+    list_display = ('id', 'order', 'product', 'quantity', 'total_cost')
 
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
