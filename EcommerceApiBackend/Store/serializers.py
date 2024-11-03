@@ -121,25 +121,29 @@ class OrderItemSerializer(serializers.ModelSerializer):
     cost    = serializers.SerializerMethodField()
     class Meta:
         model=OrderItem
-        fields=['id','order','product','quantity','price','cost']  # total price is read_only
+        fields=['id','product','quantity','price','cost']  # total price is read_only
         # extra_kwargs={'cost':{"read_only":True}}
     
     # validator method
     def validate(self, validated_data):
         order_quantity = validated_data["quantity"]
         product = validated_data["product"]
+        # Ensure `product` is a Product instance, or fetch if it's an ID
+        if isinstance(product, int):  # If it's an ID, fetch the product
+            product = get_object_or_404(Product, pk=product)
         product_stock = product.stock
 
-        order_id = self.context["view"].kwargs.get("order_id")
-        current_item = OrderItem.objects.filter(order__id=order_id, product=product)
+        order_id = self.context["view"].kwargs.get("order_id",None)
+        if  order_id is not None:
+            current_item = OrderItem.objects.filter(order__id=order_id, product=product)
+            if not self.instance and current_item.count() > 0:
+                error = {"product": _("Product already exists in your order.")}
+                raise serializers.ValidationError(f"error ts - {error}")
 
         if order_quantity > product_stock:
             error = {"quantity": _("Ordered quantity is more than the stock.")}
             raise serializers.ValidationError(error)
 
-        if not self.instance and current_item.count() > 0:
-            error = {"product": _("Product already exists in your order.")}
-            raise serializers.ValidationError(error)
 
         if self.context["request"].user == product.seller:
             error = _("Adding your own product to your order is not allowed")
@@ -150,12 +154,13 @@ class OrderItemSerializer(serializers.ModelSerializer):
     def get_price(self,obj):
         return obj.product.price
 
-    def get_cost(self,obj)        :
-        return obj.total_cost
+    def get_cost(self,obj):
+        return obj.cost
     
 
 class OrderReadSerializer(serializers.ModelSerializer):
     order_items = OrderItemSerializer(many=True)  # Optional for cart orders
+    buyer = serializers.StringRelatedField(read_only=True)  # Show the username as a string
     class Meta:
         model=Order
         fields = ['id', 'buyer', 'billing_address','shipping_address', 'total_cost', 'status', 'order_items']
@@ -163,19 +168,29 @@ class OrderReadSerializer(serializers.ModelSerializer):
 
 
 class OrderWriteSerializer(serializers.ModelSerializer):
+    buyer = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    order_items = serializers.ListField(child=OrderItemSerializer(), write_only=True)
     class Meta:
         model = Order
-        fields = ['id', 'buyer', 'billing_address', 'shipping_address', 'order_items']
+        fields = ['id','buyer', 'billing_address', 'shipping_address', 'order_items']
+
     def create(self, validated_data):
-        order_items_data = validated_data.pop('order_items')
-        product_id = order_items_data.pop('product_id')
-        # product = get_object_or_404(Product, id=product_id)
-        print(order_items_data)
+        orders_data = validated_data.pop("order_items")
+        billing_address = validated_data.get("billing_address",None)
+        shipping_address = validated_data.get("shipping_address",None)
+        if shipping_address is not None  and  billing_address is None:
+            validated_data['billing_address'] = shipping_address
+        elif billing_address is not None and  shipping_address is None:
+            validated_data['shipping_address'] = billing_address
+        else:
+            return serializers.ValidationError("Shipping address and billing address are required")
+
         order = Order.objects.create(**validated_data)
-        for order_item_data in order_items_data:
-            OrderItem.objects.create(order=order,**order_item_data)
-        
+        for order_data in orders_data:
+            OrderItem.objects.create(order=order, **order_data)
+
         return order
+
 
 
 class PaymentSerializer(serializers.ModelSerializer):

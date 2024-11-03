@@ -7,10 +7,11 @@ from rest_framework_simplejwt.views import (
 )
 
 router = DefaultRouter()
-router.register('products',views.ProductViewset,basename='product')         ## product's  endpoints
-router.register('categories',views.CategoryViewset,basename='category')     ## category's  endpoints
-router.register('cart',views.CartViewset,basename='cart')                   ## cart's  endpoints
-router.register('products/<int:product_id>/reviews',views.ReviewViewSet,basename='reviews')     #### reviews's  endpoints
+router.register('products',views.ProductViewset,basename='product')                                 ## product's  endpoints
+router.register('categories',views.CategoryViewset,basename='category')                             ## category's  endpoints
+router.register('cart',views.CartViewset,basename='cart')                                           ## cart's  endpoints
+router.register('user/orders',views.OrderViewSet,basename='order')                                  ## order's  endpoints                      ## orderitem's  endpoints
+router.register('products/<int:product_id>/reviews',views.ReviewViewSet,basename='reviews')         #### reviews's  endpoints
 
 urlpatterns = [
     # path('',include(router.urls)),
@@ -39,9 +40,12 @@ urlpatterns = [
     path('cart/clear/',views.CartViewset.as_view({'delete':'clear_cart'}),name='clear-cart'),
 
 
-
-    path('place-order/',views.OrderView.as_view(),name='place-order'),
-    path('payements/initialize/',views.OrderView.as_view(),name='place-order'),
+    path('order/<int:order_id>/order-items/', views.OrderItemViewSet.as_view({
+        'get': 'list',
+        'post': 'create',
+    }), name='order-item-list-create'),
+    # path('place-order/',views.OrderView.as_view(),name='place-order'),
+    # path('payements/initialize/',views.OrderView.as_view(),name='place-order'),
     # path('place-order/<int:order_id>/payement/',views.ProfileView.as_view(),name='profile-detail'),
 ]
 

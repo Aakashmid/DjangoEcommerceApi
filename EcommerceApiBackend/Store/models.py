@@ -115,7 +115,7 @@ class CartItem(models.Model):
         return effective_price * self.quantity
 
     def __str__(self):
-        return f"cart item of id {self.id} with quantity {self.quantity} and price {self.total_price}"
+        return f"cart item of id {self.id} with quantity {self.quantity} and price {self.total_cost}"
     
 
 class Address(models.Model):
@@ -149,11 +149,11 @@ class Order(models.Model):
     )
 
     @property
-    def total_price(self):
-        return sum(i.total_price for i in  self.order_items.all())
+    def total_cost(self):
+        return sum(i.total_cost for i in  self.order_items.all())
 
     def __str__(self) -> str:
-        return f"Order {self.id} - {self.user.username}"
+        return f"Order {self.id} - {self.buyer.username}"
 
     
 class OrderItem(models.Model):

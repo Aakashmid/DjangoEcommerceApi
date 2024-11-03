@@ -32,8 +32,11 @@ class IsOrderItemByBuyerOrAdmin(permissions.BasePermission):
     """
     def has_permission(self, request, view):
         order_id = view.kwargs.get("order_id")
-        order = get_object_or_404(Order, id=order_id)
-        return order.buyer == request.user or request.user.is_staff
+        if order_id:
+            order = get_object_or_404(Order, id=order_id)
+            return order.buyer == request.user or request.user.is_staff
+        else:
+            return False
     
     def has_object_permission(self, request, view, obj):
         '''object(model) level permission '''
@@ -44,14 +47,12 @@ class IsOrderByBuyerOrAdmin(permissions.BasePermission):
     Custom permission to only allow order created by the buyer or admin to be viewed or updated.
     """
     def has_permission(self, request, view):
-        order_id = view.kwargs.get("order_id")
-        order = get_object_or_404(Order, id=order_id)
-        return order.buyer == request.user or request.user.is_staff
-    
-    def has_object_permission(self, request, view, obj):
-        '''object(model) level permission '''
-        return obj.order.buyer == request.user or request.user.is_staff
-    
+        order_id = view.kwargs.get("order_id",None)
+        if order_id is not None:
+            order = get_object_or_404(Order, id=order_id)
+            return order.buyer == request.user or request.user.is_staff
+        else:
+            return request.user.is_authenticated
 
 class IsOrderItemPending(permissions.BasePermission):
     """
