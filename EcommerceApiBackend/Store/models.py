@@ -127,13 +127,15 @@ class Address(models.Model):
     is_default         = models.BooleanField(default=False)  # Mark a default address
 
     def __str__(self):
-        return f"{self.address}, {self.city}, {self.state}, {self.zip_code}"
+        return f"{self.address_line_1}, {self.city}, {self.state}, {self.zip_code}"
     
-    def save(self, force_insert: bool = ..., force_update: bool = ..., using: str | None = ..., update_fields: Iterable[str] | None = ...) -> None:
+    def save(self,*args, **kwargs) :
         """ unset default flat for other addresses of a user if current address hase is_default True """
         if self.is_default:
             Address.objects.filter(user=self.user,is_default=True).update(is_default=False)
-        return super().save(force_insert, force_update, using, update_fields)
+        if not self.is_default and  Address.objects.all().count() == 0:
+            self.is_default = True
+        return super().save(*args, **kwargs)
 
 
 class Order(models.Model):

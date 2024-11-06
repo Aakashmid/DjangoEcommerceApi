@@ -11,6 +11,7 @@ router.register('products',views.ProductViewset,basename='product')             
 router.register('categories',views.CategoryViewset,basename='category')                             ## category's  endpoints
 router.register('cart',views.CartViewset,basename='cart')                                           ## cart's  endpoints
 router.register('user/orders',views.OrderViewSet,basename='order')                                  ## order's  endpoints                      ## orderitem's  endpoints
+router.register('addresses', views.AddressViewSet, basename='address')
 router.register('products/<int:product_id>/reviews',views.ReviewViewSet,basename='reviews')         #### reviews's  endpoints
 
 urlpatterns = [

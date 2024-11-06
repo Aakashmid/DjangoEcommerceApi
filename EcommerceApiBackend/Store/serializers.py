@@ -8,7 +8,7 @@ from rest_framework.exceptions import PermissionDenied
 class AddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = Address
-        fields = ['id', 'address', 'state', 'city', 'zip_code', 'phone', 'is_default']
+        fields = ['id','address_line_1', 'state', 'city', 'zip_code', 'is_default']
 
 class UserSerializer(serializers.ModelSerializer):
     """
@@ -182,14 +182,17 @@ class OrderWriteSerializer(serializers.ModelSerializer):
             validated_data['billing_address'] = shipping_address
         elif billing_address is not None and  shipping_address is None:
             validated_data['shipping_address'] = billing_address
+        elif self.context['request'].user.addresses.all().filter(is_default=True).exists():
+            validated_data['shipping_address'] = self.context['request'].user.addresses.all().filter(is_default=True).first()
+            validated_data['billing_address'] = self.context['request'].user.addresses.all().filter(is_default=True).first()
         else:
-            return serializers.ValidationError("Shipping address and billing address are required")
+            raise  serializers.ValidationError("Shipping address and billing address are required")
 
         order = Order.objects.create(**validated_data)
         for order_data in orders_data:
             OrderItem.objects.create(order=order, **order_data)
 
-        return order
+        return OrderReadSerializer(order).data
 
 
 

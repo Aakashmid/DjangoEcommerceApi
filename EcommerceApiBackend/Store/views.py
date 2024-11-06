@@ -12,8 +12,8 @@ from rest_framework import status,viewsets , generics
 from .permissions import  IsAdminOrStaff,IsSellerOrReadOnly , IsOrderItemByBuyerOrAdmin , IsOrderItemPending,IsOrderPending, IsOrderByBuyerOrAdmin
 import stripe
 from .filters import ProductFilter,CustomSearchFilter
-from .models import User, Product , Category , Cart , CartItem , Order, OrderItem , Review , Payment
-from .serializers import UserSerializer,ProfileSerializer,ProductSerializer, CategorySeriazlizer , CartItemSerializer,OrderReadSerializer,OrderWriteSerializer, ReviewSerializer , PaymentSerializer , CartSerializer , OrderItemSerializer
+from .models import User, Product , Category , Cart , CartItem , Order, OrderItem , Review , Payment , Address
+from .serializers import UserSerializer,ProfileSerializer,ProductSerializer, CategorySeriazlizer , CartItemSerializer,OrderReadSerializer,OrderWriteSerializer, ReviewSerializer , PaymentSerializer , CartSerializer , OrderItemSerializer,AddressSerializer
 # Create your views here.
 
 
@@ -200,19 +200,6 @@ class OrderViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
 
-
-# class OrderListView(generics.ListAPIView):
-#     serializer_class=OrderReadSerializer
-#     def get_queryset(self):
-#         return Order.objects.filter(user=self.request.user)
-    
-
-# class OrderDetailView(generics.RetrieveAPIView):
-#     serializer_class=OrderReadSerializer
-#     def get_queryset(self):
-#         return Order.objects.filter(user=self.request.user)
-
-
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
 
@@ -225,7 +212,16 @@ class ReviewViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+class AddressViewSet(viewsets.ModelViewSet):
+    serializer_class = AddressSerializer
 
+    def get_queryset(self):
+        # Filter addresses to only show those belonging to the current user
+        return Address.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        # Set the current user as the owner of the address
+        serializer.save(user=self.request.user)
 
 
 ##### Payement  handling related views #####
